@@ -26,22 +26,44 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Compilar o APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
-
-      - name: Conferir se o APK existe
+      - name: Preparar a chave de assinatura
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Faltam os secrets KEYSTORE_BASE64 e KEY_PASSWORD."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/engbase.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/engbase.jks" >> "$GITHUB_ENV"
+
+      - name: Compilar o APK assinado
+        env:
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: >
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          -PappVersionCode=${{ github.run_number }}
+          -PappVersionName=0.2.${{ github.run_number }}
+
+      - name: Conferir a assinatura
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
           test -f "$APK"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort | tail -n 1)
+          "$APKSIGNER" verify --print-certs "$APK"
           cp "$APK" EngBase.apk
-          ls -l EngBase.apk
+          sha256sum EngBase.apk | cut -d' ' -f1 > EngBase.apk.sha256
+          ls -l EngBase.apk EngBase.apk.sha256
 
       - name: Publicar na aba Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Eng base - build ${{ github.run_number }}
+          name: Eng base 0.2.${{ github.run_number }}
           body: |
             Commit: ${{ github.sha }}
-            Versão do app: 0.1.0
-          files: EngBase.apk
+            Versão do app: 0.2.${{ github.run_number }}
+          files: |
+            EngBase.apk
+            EngBase.apk.sha256
