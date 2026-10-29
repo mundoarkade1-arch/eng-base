@@ -4,6 +4,9 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val appVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
+val appVersionName = (project.findProperty("appVersionName") as String?) ?: "0.2.0"
+
 android {
     namespace = "com.engbase.app"
     compileSdk = 34
@@ -12,13 +15,27 @@ android {
         applicationId = "com.engbase.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val keyPass = System.getenv("KEY_PASSWORD")
+            if (keystorePath != null && keyPass != null) {
+                storeFile = file(keystorePath)
+                storePassword = keyPass
+                keyAlias = "engbase"
+                keyPassword = keyPass
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
