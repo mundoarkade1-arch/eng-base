@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -37,7 +39,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun EngBaseApp(vm: AppViewModel = viewModel()) {
+fun EngBaseApp(vm: AppViewModel = viewModel(), up: UpdateViewModel = viewModel()) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val items = listOf(
         "Hoje" to Icons.Filled.Home,
@@ -60,13 +62,16 @@ fun EngBaseApp(vm: AppViewModel = viewModel()) {
             }
         }
     ) { pad ->
-        Box(Modifier.padding(pad).fillMaxSize()) {
-            when (tab) {
-                0 -> TodayScreen(vm)
-                1 -> SubjectsScreen(vm)
-                2 -> TutorScreen(vm)
-                3 -> NotebookScreen()
-                else -> FocusScreen(vm)
+        Column(Modifier.padding(pad).fillMaxSize()) {
+            UpdateBanner(up)
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (tab) {
+                    0 -> TodayScreen(vm)
+                    1 -> SubjectsScreen(vm)
+                    2 -> TutorScreen(vm)
+                    3 -> NotebookScreen()
+                    else -> FocusScreen(vm)
+                }
             }
         }
     }
